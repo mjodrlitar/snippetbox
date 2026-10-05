@@ -1,0 +1,32 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{template "title" .}} - agas</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <a href="/" class="brand-logo" title="agas snippetbox">
+      <svg class="bolt-icon" viewBox="0 0 24 24">
+        <path d="M13 2L3 14h7v8l10-12h-7l3-8z"/>
+      </svg>
+      <span>agas</span>
+    </a>
+
+    <nav class="header-nav">
+      <a href="/about" class="nav-link">About</a>
+      <a href="/login" class="btn-pill-bordered">Log in</a>
+      <a href="/signup" class="btn-pill-white">Sign Up</a>
+    </nav>
+  </header>
+
+  {{template "main" .}}
+
+</body>
+</html>
+{{end}}

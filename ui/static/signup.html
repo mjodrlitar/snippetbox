@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agas - Sign Up</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <a href="editor.html" class="brand-logo" title="agas snippetbox">
+      <svg class="bolt-icon" viewBox="0 0 24 24">
+        <path d="M13 2L3 14h7v8l10-12h-7l3-8z"/>
+      </svg>
+      <span>agas</span>
+    </a>
+
+    <nav class="header-nav">
+      <a href="about.html" class="nav-link">About</a>
+    </nav>
+  </header>
+
+  <!-- Sign Up Form Container -->
+  <main class="auth-page-container">
+    <div class="auth-card">
+      <form class="auth-form" onsubmit="event.preventDefault(); window.location.href='editor.html';">
+        <div class="auth-input-group">
+          <input 
+            type="text" 
+            class="auth-input" 
+            placeholder="Public username" 
+            required 
+            autocomplete="username" 
+            aria-label="Public username"
+          />
+        </div>
+
+        <div class="auth-input-group">
+          <input 
+            type="email" 
+            class="auth-input" 
+            placeholder="E-mail" 
+            required 
+            autocomplete="email" 
+            aria-label="E-mail"
+          />
+        </div>
+
+        <div class="auth-input-group">
+          <input 
+            type="password" 
+            class="auth-input" 
+            placeholder="Password" 
+            required 
+            autocomplete="new-password" 
+            aria-label="Password"
+          />
+        </div>
+
+        <button type="submit" class="btn-auth-submit">Sign Up</button>
+      </form>
+
+      <div class="auth-card-footer">
+        Already have an account?<br>
+        <a href="login.html">Log In</a>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>

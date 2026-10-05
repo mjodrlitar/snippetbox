@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agas - View Saga</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <a href="editor.html" class="brand-logo" title="agas snippetbox">
+      <svg class="bolt-icon" viewBox="0 0 24 24">
+        <path d="M13 2L3 14h7v8l10-12h-7l3-8z"/>
+      </svg>
+      <span>agas</span>
+    </a>
+
+    <nav class="header-nav">
+      <a href="about.html" class="nav-link">About</a>
+      <a href="login.html" class="btn-pill-bordered">Log in</a>
+      <a href="signup.html" class="btn-pill-white">Sign Up</a>
+    </nav>
+  </header>
+
+  <!-- Mobile Tab Switcher -->
+  <nav class="mobile-tab-bar" aria-label="Mobile Navigation">
+    <button class="mobile-tab-btn active" id="tabSnippet" onclick="switchMobileTab('snippet')">Snippet</button>
+    <button class="mobile-tab-btn" id="tabSagas" onclick="switchMobileTab('sidebar')">Latest sagas (9)</button>
+  </nav>
+
+  <!-- Main Workspace -->
+  <div class="app-container">
+    <!-- Snippet View -->
+    <main class="workspace-main">
+      <div class="code-area-container">
+        <!-- Line Numbers -->
+        <div class="line-numbers-col">
+          <span>1.</span>
+          <span>2.</span>
+          <span>3.</span>
+          <span>4.</span>
+          <span>5.</span>
+          <span>6.</span>
+          <span>7.</span>
+        </div>
+
+        <!-- Highlighted Code View -->
+        <pre class="snippet-viewer"><code><span class="syntax-dir">#include &lt;stdio.h&gt;</span>
+
+<span class="syntax-kw">int</span> <span class="syntax-fn">main</span>(<span class="syntax-type">void</span>)
+{
+    <span class="syntax-fn">printf</span>(<span class="syntax-str">"Hello World!"</span>);
+    <span class="syntax-kw">return</span> <span class="syntax-num">0</span>;
+}</code></pre>
+      </div>
+
+      <!-- Bottom Metadata Bar -->
+      <footer class="snippet-meta-bar">
+        <span class="meta-item">Untitled</span>
+        <span class="meta-divider">|</span>
+        <span>Type: <strong class="meta-item">C</strong></span>
+        <span class="meta-divider">|</span>
+        <span>Created at: <strong class="meta-item">07.12.2024 12:33</strong></span>
+        <span class="meta-divider">|</span>
+        <span>By: <strong class="meta-item">Guest</strong></span>
+        <span class="meta-divider">|</span>
+        <span>Expires at: <strong class="meta-item">Never</strong></span>
+      </footer>
+    </main>
+
+    <!-- Latest Public Sagas Sidebar -->
+    <aside class="sidebar-sagas" aria-label="Latest public sagas">
+      <h2 class="sidebar-heading">Latest public sagas:</h2>
+      <ul class="saga-list">
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">Just now</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">paste.txt</div>
+            <div class="saga-time">35 minutes ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">code.c</div>
+            <div class="saga-time">2 hours ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">log.txt</div>
+            <div class="saga-time">1 day ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">my project.go</div>
+            <div class="saga-time">2 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">3 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">arch_install_instruction.txt</div>
+            <div class="saga-time">4 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">temp.cpp</div>
+            <div class="saga-time">5 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">6 days ago</div>
+          </a>
+        </li>
+      </ul>
+    </aside>
+  </div>
+
+  <script>
+    // Mobile Tab Switch
+    function switchMobileTab(tab) {
+      const tabSnippet = document.getElementById('tabSnippet');
+      const tabSagas = document.getElementById('tabSagas');
+      if (tab === 'sidebar') {
+        document.body.classList.add('mobile-show-sidebar');
+        tabSagas.classList.add('active');
+        tabSnippet.classList.remove('active');
+      } else {
+        document.body.classList.remove('mobile-show-sidebar');
+        tabSnippet.classList.add('active');
+        tabSagas.classList.remove('active');
+      }
+    }
+  </script>
+</body>
+</html>
