@@ -1,0 +1,52 @@
+{{define "title"}}Sign Up{{end}}
+
+{{define "main"}}
+  <main class="auth-page-container">
+    <div class="auth-card">
+      <form class="auth-form" action="/signup" method="POST">
+        <div class="auth-input-group">
+          <input 
+            type="text" 
+            name="username"
+            class="auth-input" 
+            placeholder="Public username" 
+            required 
+            autocomplete="username" 
+            aria-label="Public username"
+          />
+        </div>
+
+        <div class="auth-input-group">
+          <input 
+            type="email" 
+            name="email"
+            class="auth-input" 
+            placeholder="E-mail" 
+            required 
+            autocomplete="email" 
+            aria-label="E-mail"
+          />
+        </div>
+
+        <div class="auth-input-group">
+          <input 
+            type="password" 
+            name="password"
+            class="auth-input" 
+            placeholder="Password" 
+            required 
+            autocomplete="new-password" 
+            aria-label="Password"
+          />
+        </div>
+
+        <button type="submit" class="btn-auth-submit">Sign Up</button>
+      </form>
+
+      <div class="auth-card-footer">
+        Already have an account?<br>
+        <a href="/login">Log In</a>
+      </div>
+    </div>
+  </main>
+{{end}}

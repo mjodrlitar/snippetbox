@@ -1,0 +1,180 @@
+{{define "title"}}Create Saga{{end}}
+
+{{define "main"}}
+  <!-- Mobile Tab Switcher -->
+  <nav class="mobile-tab-bar" aria-label="Mobile Navigation">
+    <button class="mobile-tab-btn active" id="tabEditor" onclick="switchMobileTab('editor')">Editor</button>
+    <button class="mobile-tab-btn" id="tabSagas" onclick="switchMobileTab('sidebar')">Latest sagas (9)</button>
+  </nav>
+
+  <!-- Main Workspace -->
+  <div class="app-container">
+    <main class="workspace-main">
+      <form action="/create" method="POST" style="display:flex; flex-direction:column; height:100%; width:100%;">
+        <div class="code-area-container">
+          <div class="line-numbers-col" id="lineNumbers">
+            <span>1.</span>
+            <span>2.</span>
+            <span>3.</span>
+            <span>4.</span>
+            <span>5.</span>
+            <span>6.</span>
+            <span>7.</span>
+          </div>
+
+          <textarea 
+            class="editor-textarea" 
+            name="content"
+            id="codeEditor" 
+            spellcheck="false" 
+            autocorrect="off" 
+            autocapitalize="off" 
+            placeholder="Paste or write your code here..."
+          >#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    printf("Hello World!");
+    return 0;
+}</textarea>
+        </div>
+
+        <footer class="editor-toolbar">
+          <div class="toolbar-select-wrapper">
+            <select class="custom-select" name="language" aria-label="Language">
+              <option value="c" selected>C</option>
+              <option value="text">Plain Text</option>
+              <option value="cpp">C++</option>
+              <option value="go">Go</option>
+              <option value="python">Python</option>
+              <option value="js">JavaScript</option>
+              <option value="rust">Rust</option>
+              <option value="sh">Shell</option>
+            </select>
+          </div>
+
+          <div class="toolbar-select-wrapper">
+            <select class="custom-select" name="expires" aria-label="Expiration">
+              <option value="never" selected>Never expire</option>
+              <option value="10m">10 minutes</option>
+              <option value="1h">1 hour</option>
+              <option value="1d">1 day</option>
+              <option value="1w">1 week</option>
+            </select>
+          </div>
+
+          <div class="toolbar-select-wrapper">
+            <select class="custom-select" name="visibility" aria-label="Visibility">
+              <option value="public" selected>Public</option>
+              <option value="unlisted">Unlisted</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+
+          <input 
+            type="text" 
+            class="title-input" 
+            name="title"
+            id="titleInput" 
+            placeholder="Add title" 
+            aria-label="Snippet Title"
+          />
+
+          <button type="submit" class="btn-tell">Tell</button>
+        </footer>
+      </form>
+    </main>
+
+    <!-- Latest Public Sagas Sidebar -->
+    <aside class="sidebar-sagas" aria-label="Latest public sagas">
+      <h2 class="sidebar-heading">Latest public sagas:</h2>
+      <ul class="saga-list">
+        <li class="saga-item">
+          <a href="/view?id=1" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">Just now</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=2" class="saga-link">
+            <div class="saga-title">paste.txt</div>
+            <div class="saga-time">35 minutes ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=3" class="saga-link">
+            <div class="saga-title">code.c</div>
+            <div class="saga-time">2 hours ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=4" class="saga-link">
+            <div class="saga-title">log.txt</div>
+            <div class="saga-time">1 day ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=5" class="saga-link">
+            <div class="saga-title">my project.go</div>
+            <div class="saga-time">2 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=6" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">3 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=7" class="saga-link">
+            <div class="saga-title">arch_install_instruction.txt</div>
+            <div class="saga-time">4 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=8" class="saga-link">
+            <div class="saga-title">temp.cpp</div>
+            <div class="saga-time">5 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="/view?id=9" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">6 days ago</div>
+          </a>
+        </li>
+      </ul>
+    </aside>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('codeEditor');
+    const lineNumbers = document.getElementById('lineNumbers');
+
+    function updateLineNumbers() {
+      const lines = textarea.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= Math.max(lines, 7); i++) {
+        html += `<span>${i}.</span>`;
+      }
+      lineNumbers.innerHTML = html;
+    }
+
+    textarea.addEventListener('input', updateLineNumbers);
+    updateLineNumbers();
+
+    function switchMobileTab(tab) {
+      const tabEditor = document.getElementById('tabEditor');
+      const tabSagas = document.getElementById('tabSagas');
+      if (tab === 'sidebar') {
+        document.body.classList.add('mobile-show-sidebar');
+        tabSagas.classList.add('active');
+        tabEditor.classList.remove('active');
+      } else {
+        document.body.classList.remove('mobile-show-sidebar');
+        tabEditor.classList.add('active');
+        tabSagas.classList.remove('active');
+      }
+    }
+  </script>
+{{end}}

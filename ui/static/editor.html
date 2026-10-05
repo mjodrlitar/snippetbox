@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>agas - Create Saga</title>
+  <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <a href="editor.html" class="brand-logo" title="agas snippetbox">
+      <img class="brand-logo-mark" src="./img/sieg.png" alt="agas rune logo" />
+      <span>agas</span>
+    </a>
+
+    <nav class="header-nav">
+      <a href="about.html" class="nav-link">About</a>
+      <a href="login.html" class="btn-pill-bordered">Log in</a>
+      <a href="signup.html" class="btn-pill-white">Sign Up</a>
+    </nav>
+  </header>
+
+  <!-- Mobile Tab Switcher -->
+  <nav class="mobile-tab-bar" aria-label="Mobile Navigation">
+    <button class="mobile-tab-btn active" id="tabEditor" onclick="switchMobileTab('editor')">Editor</button>
+    <button class="mobile-tab-btn" id="tabSagas" onclick="switchMobileTab('sidebar')">Latest sagas (9)</button>
+  </nav>
+
+  <!-- Main Workspace -->
+  <div class="app-container">
+    <!-- Code Editor Form -->
+    <main class="workspace-main">
+      <div class="code-area-container">
+        <!-- Dynamic Line Numbers -->
+        <div class="line-numbers-col" id="lineNumbers">
+          <span>1.</span>
+          <span>2.</span>
+          <span>3.</span>
+          <span>4.</span>
+          <span>5.</span>
+          <span>6.</span>
+          <span>7.</span>
+        </div>
+
+        <textarea 
+          class="editor-textarea" 
+          id="codeEditor" 
+          spellcheck="false" 
+          autocorrect="off" 
+          autocapitalize="off" 
+          placeholder="Paste or write your code here..."
+        >#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    printf("Hello World!");
+    return 0;
+}</textarea>
+      </div>
+
+      <!-- Bottom Editor Toolbar -->
+      <footer class="editor-toolbar">
+        <div class="toolbar-select-wrapper">
+          <select class="custom-select" id="langSelect" aria-label="Language">
+            <option value="c" selected>C</option>
+            <option value="text">Plain Text</option>
+            <option value="cpp">C++</option>
+            <option value="go">Go</option>
+            <option value="python">Python</option>
+            <option value="js">JavaScript</option>
+            <option value="rust">Rust</option>
+            <option value="sh">Shell</option>
+          </select>
+        </div>
+
+        <div class="toolbar-select-wrapper">
+          <select class="custom-select" id="expireSelect" aria-label="Expiration">
+            <option value="never" selected>Never expire</option>
+            <option value="10m">10 minutes</option>
+            <option value="1h">1 hour</option>
+            <option value="1d">1 day</option>
+            <option value="1w">1 week</option>
+          </select>
+        </div>
+
+        <div class="toolbar-select-wrapper">
+          <select class="custom-select" id="visibilitySelect" aria-label="Visibility">
+            <option value="public" selected>Public</option>
+            <option value="unlisted">Unlisted</option>
+            <option value="private">Private</option>
+          </select>
+        </div>
+
+        <input 
+          type="text" 
+          class="title-input" 
+          id="titleInput" 
+          placeholder="Add title" 
+          aria-label="Snippet Title"
+        />
+
+        <button class="btn-tell" onclick="handleTellClick()">Tell</button>
+      </footer>
+    </main>
+
+    <!-- Latest Public Sagas Sidebar -->
+    <aside class="sidebar-sagas" aria-label="Latest public sagas">
+      <h2 class="sidebar-heading">Latest public sagas:</h2>
+      <ul class="saga-list">
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">Just now</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">paste.txt</div>
+            <div class="saga-time">35 minutes ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">code.c</div>
+            <div class="saga-time">2 hours ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">log.txt</div>
+            <div class="saga-time">1 day ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">my project.go</div>
+            <div class="saga-time">2 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">3 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">arch_install_instruction.txt</div>
+            <div class="saga-time">4 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">temp.cpp</div>
+            <div class="saga-time">5 days ago</div>
+          </a>
+        </li>
+        <li class="saga-item">
+          <a href="view.html" class="saga-link">
+            <div class="saga-title">Untitled</div>
+            <div class="saga-time">6 days ago</div>
+          </a>
+        </li>
+      </ul>
+    </aside>
+  </div>
+
+  <script>
+    // Synchronize Line Numbers
+    const textarea = document.getElementById('codeEditor');
+    const lineNumbers = document.getElementById('lineNumbers');
+
+    function updateLineNumbers() {
+      const lines = textarea.value.split('\n').length;
+      let html = '';
+      for (let i = 1; i <= Math.max(lines, 7); i++) {
+        html += `<span>${i}.</span>`;
+      }
+      lineNumbers.innerHTML = html;
+    }
+
+    textarea.addEventListener('input', updateLineNumbers);
+    updateLineNumbers();
+
+    // Mobile Tab Switch
+    function switchMobileTab(tab) {
+      const tabEditor = document.getElementById('tabEditor');
+      const tabSagas = document.getElementById('tabSagas');
+      if (tab === 'sidebar') {
+        document.body.classList.add('mobile-show-sidebar');
+        tabSagas.classList.add('active');
+        tabEditor.classList.remove('active');
+      } else {
+        document.body.classList.remove('mobile-show-sidebar');
+        tabEditor.classList.add('active');
+        tabSagas.classList.remove('active');
+      }
+    }
+
+    // Submit Action
+    function handleTellClick() {
+      window.location.href = 'view.html';
+    }
+  </script>
+</body>
+</html>

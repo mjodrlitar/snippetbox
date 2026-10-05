@@ -11,7 +11,7 @@ import (
 
 func main() {
 	wg, _ := errgroup.WithContext(context.Background())
-	addr := flag.String("addr", ":1488", "HTTP server address")
+	addr := flag.String("addr", ":4308", "HTTP server address")
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 
 	flag.Parse()
