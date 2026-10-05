@@ -11,7 +11,7 @@ import (
 
 func main() {
 	wg, _ := errgroup.WithContext(context.Background())
-	addr := flag.String("addr", ":1488", "HTTP server address")
+	addr := flag.String("addr", ":4308", "HTTP server address")
 	fileServer := http.FileServer(http.Dir("./ui/static"))
 
 	flag.Parse()
@@ -23,7 +23,6 @@ func main() {
 	mux.HandleFunc("/view", snippetView)
 	mux.HandleFunc("/login", userLogin)
 	mux.HandleFunc("/signup", userSignup)
-	mux.HandleFunc("/about", aboutPage)
 
 	wg.Go(func() error {
 		if err := http.ListenAndServe(*addr, mux); err != nil && err != http.ErrServerClosed {
