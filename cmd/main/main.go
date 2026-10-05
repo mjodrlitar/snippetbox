@@ -23,6 +23,7 @@ func main() {
 	mux.HandleFunc("/view", snippetView)
 	mux.HandleFunc("/login", userLogin)
 	mux.HandleFunc("/signup", userSignup)
+	mux.HandleFunc("/about", aboutPage)
 
 	wg.Go(func() error {
 		if err := http.ListenAndServe(*addr, mux); err != nil && err != http.ErrServerClosed {

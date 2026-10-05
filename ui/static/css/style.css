@@ -101,7 +101,7 @@ button, input, select, textarea {
 .brand-logo {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 0;
   font-weight: 700;
   font-size: 17px;
   letter-spacing: -0.5px;
@@ -114,10 +114,16 @@ button, input, select, textarea {
   opacity: 0.85;
 }
 
-.brand-logo .bolt-icon {
-  width: 17px;
-  height: 17px;
-  fill: currentColor;
+.brand-logo-mark {
+  width: calc(1em + 2px);
+  height: calc(1em + 2px);
+  display: inline-block;
+  flex-shrink: 0;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  vertical-align: -0.08em;
+  transform: translateY(-0.04em);
+  margin-right: -0.12em;
 }
 
 .header-nav {
