@@ -1,30 +1,12 @@
 package main
 
 import (
-	"html/template"
-	"log/slog"
 	"net/http"
 	"strconv"
 )
 
-func renderTemplate(w http.ResponseWriter, page string) {
-	files := []string{
-		"./ui/html/base.html",
-		"./ui/html/pages/" + page,
-	}
-
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		slog.Error(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, "base", nil)
-	if err != nil {
-		slog.Error(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+func renderApp(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./ui/dist/index.html")
 }
 
 func snippetCreate(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +24,7 @@ func snippetView(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad snippet id value: null or less", http.StatusBadRequest)
 		return
 	}
-	renderTemplate(w, "view.html")
+	renderApp(w, r)
 }
 
 func snippetHome(w http.ResponseWriter, r *http.Request) {
@@ -50,7 +32,7 @@ func snippetHome(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	renderTemplate(w, "home.html")
+	renderApp(w, r)
 }
 
 func userLogin(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +40,7 @@ func userLogin(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	renderTemplate(w, "login.html")
+	renderApp(w, r)
 }
 
 func userSignup(w http.ResponseWriter, r *http.Request) {
@@ -66,9 +48,9 @@ func userSignup(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-	renderTemplate(w, "signup.html")
+	renderApp(w, r)
 }
 
 func aboutPage(w http.ResponseWriter, r *http.Request) {
-	renderTemplate(w, "about.html")
+	renderApp(w, r)
 }

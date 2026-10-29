@@ -11,13 +11,13 @@ import (
 
 func main() {
 	wg, _ := errgroup.WithContext(context.Background())
-	addr := flag.String("addr", ":1488", "HTTP server address")
-	fileServer := http.FileServer(http.Dir("./ui/static"))
+	addr := flag.String("addr", ":1223", "HTTP server address")
+	assetServer := http.FileServer(http.Dir("./ui/dist/assets"))
 
 	flag.Parse()
 
 	mux := http.NewServeMux()
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	mux.Handle("/assets/", http.StripPrefix("/assets/", assetServer))
 	mux.HandleFunc("/", snippetHome)
 	mux.HandleFunc("/create", snippetCreate)
 	mux.HandleFunc("/view", snippetView)
