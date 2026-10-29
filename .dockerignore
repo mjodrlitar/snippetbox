@@ -1,0 +1,6 @@
+.git
+.vscode
+ui/node_modules
+ui/dist
+ui/dist-ssr
+*.local

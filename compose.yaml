@@ -1,0 +1,17 @@
+services:
+  backend:
+    build:
+      context: .
+    expose:
+      - "1223"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ui/Dockerfile
+    depends_on:
+      - backend
+    ports:
+      - "1223:80"
+    restart: unless-stopped
