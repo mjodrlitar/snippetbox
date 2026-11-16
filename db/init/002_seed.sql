@@ -1,4 +1,4 @@
--- Тестовые данные, чтобы приложение не выглядело пустым.
+-- Sample data so the app does not look empty.
 
 INSERT INTO languages (code, name) VALUES
     ('text',   'Plain Text'),
@@ -10,7 +10,7 @@ INSERT INTO languages (code, name) VALUES
     ('rust',   'Rust'),
     ('sh',     'Shell');
 
--- Пароль у всех тестовых пользователей: "password" (bcrypt, cost 12).
+-- Password for all test users: "password" (bcrypt, cost 12).
 INSERT INTO users (username, email, password_hash, created_at) VALUES
     ('n3cr0l0rd', 'necro@example.com', '$2a$12$o.gmbRwrC7dHtJiA8iiP5OpprAVPKpOGCEDn.9H15cq66P1dvL/ue', now() - interval '30 days'),
     ('alice',     'alice@example.com', '$2a$12$o.gmbRwrC7dHtJiA8iiP5OpprAVPKpOGCEDn.9H15cq66P1dvL/ue', now() - interval '20 days'),
@@ -67,7 +67,7 @@ INSERT INTO snippets (title, content, language, visibility, user_id, created_at,
     E'fn main() {\n    let v: Vec<u32> = (1..=5).map(|x| x * x).collect();\n    println!("{:?}", v);\n}',
     'rust', 'public', 1, now() - interval '7 days', NULL
 ),
--- Не видны в ленте: unlisted (доступен только по ссылке) и private.
+-- Not shown in the feed: unlisted (reachable by link only) and private.
 (
     'secret-config.sh',
     E'export DB_PASSWORD=change-me',
@@ -78,7 +78,7 @@ INSERT INTO snippets (title, content, language, visibility, user_id, created_at,
     E'This snippet is unlisted: it is reachable by id but not shown in the feed.',
     'text', 'unlisted', 2, now() - interval '3 hours', NULL
 ),
--- Уже истёкший сниппет: в базе есть, но API его не отдаёт.
+-- Already expired snippet: present in the DB, but the API does not return it.
 (
     'expired.txt',
     E'You should not see this.',

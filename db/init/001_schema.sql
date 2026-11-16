@@ -1,6 +1,6 @@
--- Схема БД snippetbox (агас).
--- Выполняется автоматически при первом запуске контейнера postgres
--- (файлы из /docker-entrypoint-initdb.d/ запускаются по алфавиту).
+-- snippetbox (agas) database schema.
+-- Runs automatically on the first start of the postgres container
+-- (files in /docker-entrypoint-initdb.d/ are executed in alphabetical order).
 
 CREATE TYPE snippet_visibility AS ENUM ('public', 'unlisted', 'private');
 
@@ -23,15 +23,16 @@ CREATE TABLE snippets (
     content     TEXT               NOT NULL CHECK (length(content) > 0),
     language    VARCHAR(16)        NOT NULL DEFAULT 'text' REFERENCES languages (code),
     visibility  snippet_visibility NOT NULL DEFAULT 'public',
-    user_id     BIGINT             REFERENCES users (id) ON DELETE SET NULL, -- NULL = гость
+    user_id     BIGINT             REFERENCES users (id) ON DELETE SET NULL, -- NULL = guest
     created_at  TIMESTAMPTZ        NOT NULL DEFAULT now(),
-    expires_at  TIMESTAMPTZ,                                                 -- NULL = никогда
+    expires_at  TIMESTAMPTZ,                                                 -- NULL = never
     CHECK (expires_at IS NULL OR expires_at > created_at)
 );
 
--- Лента "Latest public sagas": фильтр по видимости + сортировка по дате.
+-- "Latest public sagas" feed: filter by visibility + sort by date.
 CREATE INDEX snippets_public_latest_idx
     ON snippets (created_at DESC)
     WHERE visibility = 'public';
 
-CREATE INDEX snippets_user_id_idx ON snippets (user_id);
+-- "My sagas": all of the user's snippets, newest first.
+CREATE INDEX snippets_user_id_idx ON snippets (user_id, created_at DESC);

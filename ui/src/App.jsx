@@ -19,8 +19,13 @@ const LANGUAGE_NAMES = {
   sh: 'Shell',
 };
 
-async function api(path, options) {
-  const response = await fetch(path, options);
+async function api(path, { method = 'GET', body } = {}) {
+  const response = await fetch(path, {
+    method,
+    credentials: 'same-origin',
+    headers: method === 'GET' ? undefined : { 'Content-Type': 'application/json' },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
   return data;
@@ -66,7 +71,7 @@ function BrandMark() {
   );
 }
 
-function AppHeader({ onNavigate }) {
+function AppHeader({ user, onNavigate, onLogout }) {
   const handleLink = (path) => (event) => {
     event.preventDefault();
     onNavigate(path);
@@ -80,17 +85,54 @@ function AppHeader({ onNavigate }) {
       </a>
       <nav className="header-nav" aria-label="Main navigation">
         <a href="/about" className="nav-link" onClick={handleLink('/about')}>About</a>
-        <a href="/login" className="btn-pill-bordered" onClick={handleLink('/login')}>Log in</a>
-        <a href="/signup" className="btn-pill-white" onClick={handleLink('/signup')}>Sign Up</a>
+        {user ? (
+          <>
+            <span className="nav-link nav-user" title={user.email}>@{user.username}</span>
+            <button type="button" className="btn-pill-bordered" onClick={onLogout}>Log out</button>
+          </>
+        ) : (
+          <>
+            <a href="/login" className="btn-pill-bordered" onClick={handleLink('/login')}>Log in</a>
+            <a href="/signup" className="btn-pill-white" onClick={handleLink('/signup')}>Sign Up</a>
+          </>
+        )}
       </nav>
     </header>
   );
 }
 
-function LatestSnippets({ sagas, onSelect }) {
+const VISIBILITY_BADGES = {
+  private: { icon: '🔒', label: 'Private' },
+  unlisted: { icon: '🔗', label: 'Unlisted' },
+};
+
+function SidebarSnippets({ sagas, mode, onModeChange, showModeSwitch, onSelect }) {
+  const heading = mode === 'mine' ? 'My sagas' : 'Latest public sagas';
   return (
-    <aside className="sidebar-sagas" aria-label="Latest public sagas">
-      <h2 className="sidebar-heading">Latest public sagas:</h2>
+    <aside className="sidebar-sagas" aria-label={heading}>
+      {showModeSwitch ? (
+        <div className="sidebar-switch" role="tablist" aria-label="Sidebar list">
+          {[['latest', 'Latest public'], ['mine', 'My sagas']].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={mode === value}
+              className={`sidebar-switch-btn ${mode === value ? 'active' : ''}`}
+              onClick={() => onModeChange(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <h2 className="sidebar-heading">{heading}:</h2>
+      )}
+      {sagas.length === 0 && (
+        <p className="sidebar-empty">
+          {mode === 'mine' ? "You haven't created any sagas yet." : 'No public sagas yet.'}
+        </p>
+      )}
       <ul className="saga-list">
         {sagas.map((saga) => (
           <li key={saga.id} className="saga-item">
@@ -102,7 +144,18 @@ function LatestSnippets({ sagas, onSelect }) {
                 onSelect(saga);
               }}
             >
-              <div className="saga-title">{saga.title}</div>
+              <div className="saga-title">
+                {VISIBILITY_BADGES[saga.visibility] && (
+                  <span
+                    className="saga-badge"
+                    title={VISIBILITY_BADGES[saga.visibility].label}
+                    aria-label={VISIBILITY_BADGES[saga.visibility].label}
+                  >
+                    {VISIBILITY_BADGES[saga.visibility].icon}
+                  </span>
+                )}
+                {saga.title}
+              </div>
               <div className="saga-time">{formatRelative(saga.createdAt)}</div>
             </a>
           </li>
@@ -147,7 +200,7 @@ function HighlightedCode({ code, language }) {
   return highlighted;
 }
 
-function MobileTabs({ currentScreen, mobileTab, onSelect, sagaCount }) {
+function MobileTabs({ currentScreen, mobileTab, onSelect, sagaCount, sidebarLabel }) {
   return (
     <nav className="mobile-tab-bar" aria-label="Workspace navigation">
       <button
@@ -162,13 +215,13 @@ function MobileTabs({ currentScreen, mobileTab, onSelect, sagaCount }) {
         className={`mobile-tab-btn ${mobileTab === 'sidebar' ? 'active' : ''}`}
         onClick={() => onSelect('sidebar')}
       >
-        Latest sagas ({sagaCount})
+        {sidebarLabel} ({sagaCount})
       </button>
     </nav>
   );
 }
 
-function Editor({ code, setCode, title, setTitle, options, onSubmit, error, submitting }) {
+function Editor({ code, setCode, title, setTitle, options, onSubmit, error, submitting, user }) {
   const lineCount = Math.max(code.split('\n').length, 7);
 
   return (
@@ -231,7 +284,7 @@ function Editor({ code, setCode, title, setTitle, options, onSubmit, error, subm
           >
             <option value="public">Public</option>
             <option value="unlisted">Unlisted</option>
-            <option value="private">Private</option>
+            <option value="private" disabled={!user}>Private{user ? '' : ' (log in)'}</option>
           </select>
         </div>
         <input
@@ -295,6 +348,9 @@ function Workspace({
   createError,
   submitting,
   sagas,
+  sidebarMode,
+  setSidebarMode,
+  user,
   onCreate,
   onSelectSnippet,
 }) {
@@ -305,6 +361,7 @@ function Workspace({
         mobileTab={mobileTab}
         onSelect={setMobileTab}
         sagaCount={sagas.length}
+        sidebarLabel={sidebarMode === 'mine' ? 'My sagas' : 'Latest sagas'}
       />
       <div className={`app-container ${mobileTab === 'sidebar' ? 'mobile-show-sidebar' : ''}`}>
         <main className="workspace-main">
@@ -318,21 +375,47 @@ function Workspace({
               onSubmit={onCreate}
               error={createError}
               submitting={submitting}
+              user={user}
             />
           ) : (
             <SnippetView snippet={snippet} error={snippetError} />
           )}
         </main>
-        <LatestSnippets sagas={sagas} onSelect={onSelectSnippet} />
+        <SidebarSnippets
+          sagas={sagas}
+          mode={sidebarMode}
+          onModeChange={setSidebarMode}
+          showModeSwitch={Boolean(user)}
+          onSelect={onSelectSnippet}
+        />
       </div>
     </>
   );
 }
 
-function AuthPage({ isSignup, onNavigate }) {
-  const handleSubmit = (event) => {
+function AuthPage({ isSignup, onNavigate, onAuthenticated }) {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    onNavigate('/');
+    setSubmitting(true);
+    setError('');
+    try {
+      const user = await api(isSignup ? '/api/auth/signup' : '/api/auth/login', {
+        method: 'POST',
+        body: isSignup ? { username, email, password } : { email, password },
+      });
+      onAuthenticated(user);
+      onNavigate('/');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -346,8 +429,14 @@ function AuthPage({ isSignup, onNavigate }) {
                 className="auth-input"
                 placeholder="Public username"
                 required
+                minLength={3}
+                maxLength={50}
+                pattern="[A-Za-z0-9_.\-]+"
+                title="Letters, digits, _ . -"
                 autoComplete="username"
                 aria-label="Public username"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
               />
             </div>
           )}
@@ -359,6 +448,8 @@ function AuthPage({ isSignup, onNavigate }) {
               required
               autoComplete="email"
               aria-label="E-mail"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
             />
           </div>
           <div className="auth-input-group">
@@ -367,12 +458,16 @@ function AuthPage({ isSignup, onNavigate }) {
               className="auth-input"
               placeholder="Password"
               required
+              minLength={isSignup ? 8 : undefined}
               autoComplete={isSignup ? 'new-password' : 'current-password'}
               aria-label="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
             />
           </div>
-          <button type="submit" className="btn-auth-submit">
-            {isSignup ? 'Sign Up' : 'Log in'}
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button type="submit" className="btn-auth-submit" disabled={submitting}>
+            {submitting ? '...' : isSignup ? 'Sign Up' : 'Log in'}
           </button>
         </form>
         <div className="auth-card-footer">
@@ -437,6 +532,13 @@ export default function App() {
   const [sagas, setSagas] = useState([]);
   const [createError, setCreateError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [user, setUser] = useState(null);
+  const [mySagas, setMySagas] = useState([]);
+  const [sidebarMode, setSidebarMode] = useState('latest');
+
+  useEffect(() => {
+    api('/api/auth/me').then(setUser).catch(() => setUser(null));
+  }, []);
 
   const loadLatest = () => {
     api('/api/snippets')
@@ -445,6 +547,18 @@ export default function App() {
   };
 
   useEffect(loadLatest, []);
+
+  const loadMine = () => {
+    if (!user) {
+      setMySagas([]);
+      return;
+    }
+    api('/api/me/snippets')
+      .then(setMySagas)
+      .catch((error) => console.error('Cannot load my snippets:', error));
+  };
+
+  useEffect(loadMine, [user]);
 
   useEffect(() => {
     if (currentScreen !== 'view') return undefined;
@@ -457,7 +571,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [currentScreen, snippetId]);
+  }, [currentScreen, snippetId, user]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -483,17 +597,28 @@ export default function App() {
     try {
       const { id } = await api('/api/snippets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content: code, language, visibility, expires: expiration }),
+        body: { title, content: code, language, visibility, expires: expiration },
       });
       setTitle('');
       loadLatest();
+      loadMine();
       navigate(`/view?id=${id}`);
     } catch (error) {
       setCreateError(error.message);
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+    setUser(null);
+    setSidebarMode('latest');
+    if (visibility === 'private') setVisibility('public');
   };
 
   const handleSelectSnippet = (saga) => {
@@ -511,7 +636,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <AppHeader onNavigate={navigate} />
+      <AppHeader user={user} onNavigate={navigate} onLogout={handleLogout} />
       {currentScreen === 'editor' || currentScreen === 'view' ? (
         <Workspace
           currentScreen={currentScreen}
@@ -526,14 +651,22 @@ export default function App() {
           snippetError={snippetError}
           createError={createError}
           submitting={submitting}
-          sagas={sagas}
+          sagas={user && sidebarMode === 'mine' ? mySagas : sagas}
+          sidebarMode={user ? sidebarMode : 'latest'}
+          setSidebarMode={setSidebarMode}
+          user={user}
           onCreate={handleCreate}
           onSelectSnippet={handleSelectSnippet}
         />
       ) : currentScreen === 'about' ? (
         <AboutPage onNavigate={navigate} />
       ) : (
-        <AuthPage isSignup={currentScreen === 'signup'} onNavigate={navigate} />
+        <AuthPage
+          key={currentScreen}
+          isSignup={currentScreen === 'signup'}
+          onNavigate={navigate}
+          onAuthenticated={setUser}
+        />
       )}
     </div>
   );

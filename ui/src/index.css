@@ -759,3 +759,52 @@ button, input, select, textarea {
   color: #ff6b6b;
   font-size: 0.85rem;
 }
+
+button.btn-pill-bordered {
+  font-family: inherit;
+}
+
+.nav-user {
+  cursor: default;
+}
+
+.sidebar-switch {
+  display: flex;
+  gap: 4px;
+  padding: 12px 12px 10px;
+}
+
+.sidebar-switch-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-input);
+  border-radius: 9999px;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sidebar-switch-btn:hover {
+  color: var(--text-main);
+}
+
+.sidebar-switch-btn.active {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--border-focus);
+}
+
+.sidebar-empty {
+  padding: 8px 18px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.saga-badge {
+  margin-right: 6px;
+  font-size: 11px;
+}

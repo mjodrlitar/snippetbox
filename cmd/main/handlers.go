@@ -32,18 +32,23 @@ func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	// JSON API
-	mux.HandleFunc("GET /api/snippets", app.snippetLatest)
-	mux.HandleFunc("GET /api/snippets/{id}", app.snippetGet)
-	mux.HandleFunc("POST /api/snippets", app.snippetCreate)
+	api := http.NewServeMux()
+	api.HandleFunc("GET /api/snippets", app.snippetLatest)
+	api.HandleFunc("GET /api/snippets/{id}", app.snippetGet)
+	api.HandleFunc("POST /api/snippets", app.snippetCreate)
+	api.HandleFunc("POST /api/auth/signup", app.signup)
+	api.HandleFunc("POST /api/auth/login", app.login)
+	api.HandleFunc("POST /api/auth/logout", app.logout)
+	api.HandleFunc("GET /api/auth/me", app.me)
+	api.HandleFunc("GET /api/me/snippets", app.mySnippets)
+	mux.Handle("/api/", requireJSON(app.authenticate(api)))
 
-	// SPA (при локальном запуске без nginx)
+	// SPA (when running locally without nginx)
 	assetServer := http.FileServer(http.Dir("./ui/dist/assets"))
 	mux.Handle("GET /assets/", http.StripPrefix("/assets/", assetServer))
 	for _, path := range []string{"/{$}", "/view", "/login", "/signup", "/about"} {
 		mux.HandleFunc("GET "+path, renderApp)
 	}
-	mux.HandleFunc("POST /login", redirectHome)
-	mux.HandleFunc("POST /signup", redirectHome)
 
 	return mux
 }
@@ -52,12 +57,22 @@ func renderApp(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./ui/dist/index.html")
 }
 
-func redirectHome(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
 func (app *application) snippetLatest(w http.ResponseWriter, r *http.Request) {
 	snippets, err := app.snippets.Latest(r.Context(), 10)
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, snippets)
+}
+
+func (app *application) mySnippets(w http.ResponseWriter, r *http.Request) {
+	user := currentUser(r)
+	if user == nil {
+		writeError(w, http.StatusUnauthorized, "not logged in")
+		return
+	}
+	snippets, err := app.snippets.ByUser(r.Context(), user.ID, 100)
 	if err != nil {
 		serverError(w, err)
 		return
@@ -72,7 +87,7 @@ func (app *application) snippetGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	snippet, err := app.snippets.Get(r.Context(), id)
+	snippet, err := app.snippets.Get(r.Context(), id, currentUserID(r))
 	if errors.Is(err, models.ErrNoRecord) {
 		writeError(w, http.StatusNotFound, "snippet not found")
 		return
@@ -92,12 +107,11 @@ type createSnippetRequest struct {
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	var req createSnippetRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid JSON body")
+	if !decodeJSON(w, r, &req) {
 		return
 	}
+	userID := currentUserID(r)
 
 	req.Title = strings.TrimSpace(req.Title)
 	if req.Title == "" {
@@ -117,12 +131,15 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	case !visibilities[req.Visibility]:
 		writeError(w, http.StatusUnprocessableEntity, "unknown visibility")
 		return
+	case req.Visibility == "private" && userID == nil:
+		writeError(w, http.StatusUnauthorized, "log in to create private snippets")
+		return
 	case !okExpires:
 		writeError(w, http.StatusUnprocessableEntity, "unknown expiration")
 		return
 	}
 
-	id, err := app.snippets.Insert(r.Context(), req.Title, req.Content, req.Language, req.Visibility, expiresIn)
+	id, err := app.snippets.Insert(r.Context(), userID, req.Title, req.Content, req.Language, req.Visibility, expiresIn)
 	if err != nil {
 		serverError(w, err)
 		return

@@ -14,6 +14,8 @@ import (
 
 type application struct {
 	snippets *models.SnippetModel
+	users    *models.UserModel
+	sessions *models.SessionModel
 }
 
 func main() {
@@ -31,7 +33,11 @@ func main() {
 	}
 	defer db.Close()
 
-	app := &application{snippets: &models.SnippetModel{DB: db}}
+	app := &application{
+		snippets: &models.SnippetModel{DB: db},
+		users:    &models.UserModel{DB: db},
+		sessions: &models.SessionModel{DB: db},
+	}
 
 	log.Printf("Starting a HTTP server at 127.0.0.1%s", *addr)
 	if err := http.ListenAndServe(*addr, app.routes()); err != nil {
@@ -39,8 +45,8 @@ func main() {
 	}
 }
 
-// openDB создаёт пул соединений и ждёт, пока база станет доступна
-// (в docker compose postgres может подниматься дольше бэкенда).
+// openDB creates a connection pool and waits until the database is reachable
+// (in docker compose postgres may take longer to start than the backend).
 func openDB(dsn string) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {

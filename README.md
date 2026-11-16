@@ -32,3 +32,14 @@ Seed users: `n3cr0l0rd`, `alice`, `bob` (password `password`).
 | GET    | `/api/snippets`      | 10 latest public, non-expired snippets |
 | GET    | `/api/snippets/{id}` | One snippet (public/unlisted)          |
 | POST   | `/api/snippets`      | Create: `{title, content, language, visibility, expires}` |
+| POST   | `/api/auth/signup`   | Register: `{username, email, password}`, starts a session |
+| POST   | `/api/auth/login`    | Log in: `{email, password}`, sets `session` cookie |
+| POST   | `/api/auth/logout`   | Log out, deletes the session           |
+| GET    | `/api/auth/me`       | Current user or 401                    |
+| GET    | `/api/me/snippets`   | All own non-expired snippets (incl. private), 401 for guests |
+
+All non-GET API requests must use `Content-Type: application/json` (CSRF protection).
+Private snippets require login and are visible only to their author.
+
+If your DB volume was created before `003_sessions.sql` existed, apply it once:
+`docker compose exec -T db psql -U snippetbox < db/init/003_sessions.sql`
