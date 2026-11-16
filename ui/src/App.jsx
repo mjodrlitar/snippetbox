@@ -1,17 +1,5 @@
 import { useEffect, useState } from 'react';
 
-const SAMPLE_SAGAS = [
-  { id: 1, title: 'Untitled', time: 'Just now' },
-  { id: 2, title: 'paste.txt', time: '35 minutes ago' },
-  { id: 3, title: 'code.c', time: '2 hours ago' },
-  { id: 4, title: 'log.txt', time: '1 day ago' },
-  { id: 5, title: 'my project.go', time: '2 days ago' },
-  { id: 6, title: 'Untitled', time: '3 days ago' },
-  { id: 7, title: 'arch_install_instruction.txt', time: '4 days ago' },
-  { id: 8, title: 'temp.cpp', time: '5 days ago' },
-  { id: 9, title: 'Untitled', time: '6 days ago' },
-];
-
 const DEFAULT_CODE = `#include <stdio.h>
 
 int main(void)
@@ -31,13 +19,31 @@ const LANGUAGE_NAMES = {
   sh: 'Shell',
 };
 
-const EXPIRATION_NAMES = {
-  never: 'Never',
-  '10m': '10 minutes',
-  '1h': '1 hour',
-  '1d': '1 day',
-  '1w': '1 week',
-};
+async function api(path, options) {
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data;
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : 'Never';
+}
+
+function formatRelative(value) {
+  const seconds = Math.round((Date.now() - new Date(value).getTime()) / 1000);
+  if (seconds < 60) return 'Just now';
+  const units = [['day', 86400], ['hour', 3600], ['minute', 60]];
+  for (const [unit, size] of units) {
+    const amount = Math.floor(seconds / size);
+    if (amount >= 1) return `${amount} ${unit}${amount > 1 ? 's' : ''} ago`;
+  }
+  return 'Just now';
+}
+
+function getSnippetIdFromLocation() {
+  return new URLSearchParams(window.location.search).get('id');
+}
 
 const SYNTAX_TOKEN_PATTERN = /\/\/[^\n]*|\/\*[\s\S]*?\*\/|#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b\d+(?:\.\d+)?\b|\b[A-Za-z_]\w*(?=\s*\()/g;
 const SYNTAX_KEYWORDS = new Set(['return', 'if', 'else', 'for', 'while', 'switch', 'case', 'break', 'continue', 'struct', 'typedef', 'static', 'const']);
@@ -81,12 +87,12 @@ function AppHeader({ onNavigate }) {
   );
 }
 
-function LatestSnippets({ onSelect }) {
+function LatestSnippets({ sagas, onSelect }) {
   return (
     <aside className="sidebar-sagas" aria-label="Latest public sagas">
       <h2 className="sidebar-heading">Latest public sagas:</h2>
       <ul className="saga-list">
-        {SAMPLE_SAGAS.map((saga) => (
+        {sagas.map((saga) => (
           <li key={saga.id} className="saga-item">
             <a
               href={`/view?id=${saga.id}`}
@@ -97,7 +103,7 @@ function LatestSnippets({ onSelect }) {
               }}
             >
               <div className="saga-title">{saga.title}</div>
-              <div className="saga-time">{saga.time}</div>
+              <div className="saga-time">{formatRelative(saga.createdAt)}</div>
             </a>
           </li>
         ))}
@@ -141,7 +147,7 @@ function HighlightedCode({ code, language }) {
   return highlighted;
 }
 
-function MobileTabs({ currentScreen, mobileTab, onSelect }) {
+function MobileTabs({ currentScreen, mobileTab, onSelect, sagaCount }) {
   return (
     <nav className="mobile-tab-bar" aria-label="Workspace navigation">
       <button
@@ -156,13 +162,13 @@ function MobileTabs({ currentScreen, mobileTab, onSelect }) {
         className={`mobile-tab-btn ${mobileTab === 'sidebar' ? 'active' : ''}`}
         onClick={() => onSelect('sidebar')}
       >
-        Latest sagas ({SAMPLE_SAGAS.length})
+        Latest sagas ({sagaCount})
       </button>
     </nav>
   );
 }
 
-function Editor({ code, setCode, title, setTitle, options, onSubmit }) {
+function Editor({ code, setCode, title, setTitle, options, onSubmit, error, submitting }) {
   const lineCount = Math.max(code.split('\n').length, 7);
 
   return (
@@ -237,33 +243,39 @@ function Editor({ code, setCode, title, setTitle, options, onSubmit }) {
           onChange={(event) => setTitle(event.target.value)}
           aria-label="Snippet title"
         />
-        <button type="submit" className="btn-tell">Tell</button>
+        <button type="submit" className="btn-tell" disabled={submitting}>
+          {submitting ? '...' : 'Tell'}
+        </button>
+        {error && <span className="form-error" role="alert">{error}</span>}
       </footer>
     </form>
   );
 }
 
-function SnippetView({ snippet }) {
-  const lineCount = Math.max(snippet.code.split('\n').length, 7);
+function SnippetView({ snippet, error }) {
+  if (error) return <div className="snippet-status" role="alert">{error}</div>;
+  if (!snippet) return <div className="snippet-status">Loading...</div>;
+
+  const lineCount = Math.max(snippet.content.split('\n').length, 7);
 
   return (
     <>
       <div className="code-area-container">
         <CodeLines count={lineCount} />
         <pre className="snippet-viewer">
-          <code><HighlightedCode code={snippet.code} language={snippet.language} /></code>
+          <code><HighlightedCode code={snippet.content} language={snippet.language} /></code>
         </pre>
       </div>
       <footer className="snippet-meta-bar">
         <span className="meta-item">{snippet.title || 'Untitled'}</span>
         <span className="meta-divider">|</span>
-        <span>Type: <strong className="meta-item">{LANGUAGE_NAMES[snippet.language]}</strong></span>
+        <span>Type: <strong className="meta-item">{LANGUAGE_NAMES[snippet.language] ?? snippet.language}</strong></span>
         <span className="meta-divider">|</span>
-        <span>Created at: <strong className="meta-item">{snippet.createdAt}</strong></span>
+        <span>Created at: <strong className="meta-item">{formatDate(snippet.createdAt)}</strong></span>
         <span className="meta-divider">|</span>
-        <span>By: <strong className="meta-item">Guest</strong></span>
+        <span>By: <strong className="meta-item">{snippet.author ?? 'Guest'}</strong></span>
         <span className="meta-divider">|</span>
-        <span>Expires at: <strong className="meta-item">{EXPIRATION_NAMES[snippet.expiration]}</strong></span>
+        <span>Expires at: <strong className="meta-item">{formatDate(snippet.expiresAt)}</strong></span>
       </footer>
     </>
   );
@@ -279,6 +291,10 @@ function Workspace({
   setTitle,
   options,
   snippet,
+  snippetError,
+  createError,
+  submitting,
+  sagas,
   onCreate,
   onSelectSnippet,
 }) {
@@ -288,6 +304,7 @@ function Workspace({
         currentScreen={currentScreen}
         mobileTab={mobileTab}
         onSelect={setMobileTab}
+        sagaCount={sagas.length}
       />
       <div className={`app-container ${mobileTab === 'sidebar' ? 'mobile-show-sidebar' : ''}`}>
         <main className="workspace-main">
@@ -299,12 +316,14 @@ function Workspace({
               setTitle={setTitle}
               options={options}
               onSubmit={onCreate}
+              error={createError}
+              submitting={submitting}
             />
           ) : (
-            <SnippetView snippet={snippet} />
+            <SnippetView snippet={snippet} error={snippetError} />
           )}
         </main>
-        <LatestSnippets onSelect={onSelectSnippet} />
+        <LatestSnippets sagas={sagas} onSelect={onSelectSnippet} />
       </div>
     </>
   );
@@ -412,21 +431,38 @@ export default function App() {
   const [expiration, setExpiration] = useState('never');
   const [visibility, setVisibility] = useState('public');
   const [mobileTab, setMobileTab] = useState('main');
-  const [snippet, setSnippet] = useState(() => {
-    const id = Number(new URLSearchParams(window.location.search).get('id'));
-    const sample = SAMPLE_SAGAS.find((item) => item.id === id);
-    return {
-      code: DEFAULT_CODE,
-      title: sample?.title ?? 'Untitled',
-      language: 'c',
-      expiration: 'never',
-      createdAt: '07.12.2024 12:33',
+  const [snippetId, setSnippetId] = useState(getSnippetIdFromLocation);
+  const [snippet, setSnippet] = useState(null);
+  const [snippetError, setSnippetError] = useState('');
+  const [sagas, setSagas] = useState([]);
+  const [createError, setCreateError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadLatest = () => {
+    api('/api/snippets')
+      .then(setSagas)
+      .catch((error) => console.error('Cannot load latest snippets:', error));
+  };
+
+  useEffect(loadLatest, []);
+
+  useEffect(() => {
+    if (currentScreen !== 'view') return undefined;
+    let cancelled = false;
+    setSnippet(null);
+    setSnippetError('');
+    api(`/api/snippets/${encodeURIComponent(snippetId ?? '')}`)
+      .then((data) => !cancelled && setSnippet(data))
+      .catch((error) => !cancelled && setSnippetError(error.message));
+    return () => {
+      cancelled = true;
     };
-  });
+  }, [currentScreen, snippetId]);
 
   useEffect(() => {
     const handlePopState = () => {
       setCurrentScreen(getScreenFromLocation());
+      setSnippetId(getSnippetIdFromLocation());
       setMobileTab('main');
     };
     window.addEventListener('popstate', handlePopState);
@@ -436,23 +472,31 @@ export default function App() {
   const navigate = (path) => {
     window.history.pushState({}, '', path);
     setCurrentScreen(getScreenFromLocation());
+    setSnippetId(getSnippetIdFromLocation());
     setMobileTab('main');
   };
 
-  const handleCreate = (event) => {
+  const handleCreate = async (event) => {
     event.preventDefault();
-    setSnippet({
-      code,
-      title: title.trim() || 'Untitled',
-      language,
-      expiration,
-      createdAt: new Date().toLocaleString(),
-    });
-    navigate('/view?id=1');
+    setSubmitting(true);
+    setCreateError('');
+    try {
+      const { id } = await api('/api/snippets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content: code, language, visibility, expires: expiration }),
+      });
+      setTitle('');
+      loadLatest();
+      navigate(`/view?id=${id}`);
+    } catch (error) {
+      setCreateError(error.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSelectSnippet = (saga) => {
-    setSnippet((current) => ({ ...current, title: saga.title }));
     navigate(`/view?id=${saga.id}`);
   };
 
@@ -479,6 +523,10 @@ export default function App() {
           setTitle={setTitle}
           options={options}
           snippet={snippet}
+          snippetError={snippetError}
+          createError={createError}
+          submitting={submitting}
+          sagas={sagas}
           onCreate={handleCreate}
           onSelectSnippet={handleSelectSnippet}
         />

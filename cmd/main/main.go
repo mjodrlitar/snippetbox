@@ -5,35 +5,59 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
+	"time"
 
-	"golang.org/x/sync/errgroup"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/n3cr0l0rd/snippetbox/internal/models"
 )
 
-func main() {
-	wg, _ := errgroup.WithContext(context.Background())
-	addr := flag.String("addr", ":1223", "HTTP server address")
-	assetServer := http.FileServer(http.Dir("./ui/dist/assets"))
+type application struct {
+	snippets *models.SnippetModel
+}
 
+func main() {
+	addr := flag.String("addr", ":1223", "HTTP server address")
+	dsn := flag.String("dsn", os.Getenv("DATABASE_URL"), "PostgreSQL connection string")
 	flag.Parse()
 
-	mux := http.NewServeMux()
-	mux.Handle("/assets/", http.StripPrefix("/assets/", assetServer))
-	mux.HandleFunc("/", snippetHome)
-	mux.HandleFunc("/create", snippetCreate)
-	mux.HandleFunc("/view", snippetView)
-	mux.HandleFunc("/login", userLogin)
-	mux.HandleFunc("/signup", userSignup)
-	mux.HandleFunc("/about", aboutPage)
+	if *dsn == "" {
+		*dsn = "postgres://snippetbox:snippetbox@localhost:5432/snippetbox?sslmode=disable"
+	}
 
-	wg.Go(func() error {
-		if err := http.ListenAndServe(*addr, mux); err != nil && err != http.ErrServerClosed {
-			return err
-		}
-		return nil
-	})
+	db, err := openDB(*dsn)
+	if err != nil {
+		log.Fatalf("Cannot connect to database: %s", err)
+	}
+	defer db.Close()
+
+	app := &application{snippets: &models.SnippetModel{DB: db}}
 
 	log.Printf("Starting a HTTP server at 127.0.0.1%s", *addr)
-	if err := wg.Wait(); err != nil {
-		log.Printf("Error running a HTTP server:%s", err)
+	if err := http.ListenAndServe(*addr, app.routes()); err != nil {
+		log.Fatalf("Error running a HTTP server: %s", err)
+	}
+}
+
+// openDB создаёт пул соединений и ждёт, пока база станет доступна
+// (в docker compose postgres может подниматься дольше бэкенда).
+func openDB(dsn string) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.New(context.Background(), dsn)
+	if err != nil {
+		return nil, err
+	}
+	for attempt := 1; ; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		err = pool.Ping(ctx)
+		cancel()
+		if err == nil {
+			return pool, nil
+		}
+		if attempt == 15 {
+			pool.Close()
+			return nil, err
+		}
+		log.Printf("Waiting for database (%d): %s", attempt, err)
+		time.Sleep(time.Second)
 	}
 }

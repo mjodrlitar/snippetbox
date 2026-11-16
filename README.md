@@ -13,3 +13,22 @@ Open [http://localhost:1223](http://localhost:1223). Stop the app with `Ctrl+C`.
 
 To run it in the background, use `docker compose up --build -d`; view logs with
 `docker compose logs -f`, then stop and remove the container with `docker compose down`.
+
+## Database (PostgreSQL)
+
+Compose starts a `postgres:17-alpine` container. On the **first** start it runs
+`db/init/001_schema.sql` (tables) and `db/init/002_seed.sql` (sample data).
+Data lives in the `db-data` volume; to recreate the DB from scratch run
+`docker compose down -v && docker compose up --build`.
+
+Connect from the host: `psql postgres://snippetbox:snippetbox@localhost:5433/snippetbox`.
+
+Seed users: `n3cr0l0rd`, `alice`, `bob` (password `password`).
+
+### API
+
+| Method | Path                 | Description                            |
+|--------|----------------------|----------------------------------------|
+| GET    | `/api/snippets`      | 10 latest public, non-expired snippets |
+| GET    | `/api/snippets/{id}` | One snippet (public/unlisted)          |
+| POST   | `/api/snippets`      | Create: `{title, content, language, visibility, expires}` |

@@ -1,7 +1,30 @@
 services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: snippetbox
+      POSTGRES_USER: snippetbox
+      POSTGRES_PASSWORD: snippetbox
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U snippetbox -d snippetbox"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    restart: unless-stopped
+
   backend:
     build:
       context: .
+    environment:
+      DATABASE_URL: postgres://snippetbox:snippetbox@db:5432/snippetbox?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
     expose:
       - "1223"
     restart: unless-stopped
@@ -15,3 +38,6 @@ services:
     ports:
       - "1223:80"
     restart: unless-stopped
+
+volumes:
+  db-data:
