@@ -1,4 +1,4 @@
--- snippetbox (agas) database schema.
+-- Sagas (snippetbox) database schema.
 -- Runs automatically on the first start of the postgres container
 -- (files in /docker-entrypoint-initdb.d/ are executed in alphabetical order).
 

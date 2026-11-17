@@ -10,6 +10,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/n3cr0l0rd/snippetbox/internal/docs"
 	"github.com/n3cr0l0rd/snippetbox/internal/models"
 )
 
@@ -42,6 +43,10 @@ func (app *application) routes() http.Handler {
 	api.HandleFunc("GET /api/auth/me", app.me)
 	api.HandleFunc("GET /api/me/snippets", app.mySnippets)
 	mux.Handle("/api/", requireJSON(app.authenticate(api)))
+
+	// API documentation (Swagger UI)
+	mux.HandleFunc("GET /api/docs", docs.UI)
+	mux.HandleFunc("GET /api/openapi.yaml", docs.Spec)
 
 	// SPA (when running locally without nginx)
 	assetServer := http.FileServer(http.Dir("./ui/dist/assets"))

@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  title: Sagas API
+  version: 1.0.0
+  description: |
+    JSON API of Sagas, a snippet and paste sharing service.
+
+    **Authentication.** `POST /api/auth/login` or `POST /api/auth/signup` sets an
+    HttpOnly `session` cookie that is valid for 7 days. The browser sends it
+    automatically, so "Try it out" works here after logging in.
+
+    **CSRF protection.** Every non-GET request must have
+    `Content-Type: application/json`, otherwise the server responds with `415`.
+
+    **Seed users:** `necro@example.com`, `alice@example.com`, `bob@example.com`,
+    password `password`.
+servers:
+  - url: /
+tags:
+  - name: snippets
+    description: Creating and reading snippets
+  - name: auth
+    description: Registration, login and sessions
+
+paths:
+  /api/snippets:
+    get:
+      tags: [snippets]
+      summary: Latest public snippets
+      description: Returns up to 10 latest public, non-expired snippets, newest first.
+      operationId: listLatestSnippets
+      responses:
+        '200':
+          description: List of snippets
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Snippet' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    post:
+      tags: [snippets]
+      summary: Create a snippet
+      description: |
+        Guests can create `public` and `unlisted` snippets. Creating a `private`
+        snippet requires a session; the snippet is then owned by the current user.
+      operationId: createSnippet
+      security:
+        - {}
+        - sessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSnippetRequest' }
+      responses:
+        '201':
+          description: Snippet created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id]
+                properties:
+                  id: { type: integer, format: int64, example: 14 }
+        '400': { $ref: '#/components/responses/BadJSON' }
+        '401':
+          description: Guest tried to create a private snippet
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: log in to create private snippets }
+        '415': { $ref: '#/components/responses/NotJSON' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/snippets/{id}:
+    get:
+      tags: [snippets]
+      summary: Get a snippet by id
+      description: |
+        Returns a non-expired `public` or `unlisted` snippet. A `private` snippet is
+        returned only to its owner; for everyone else it is indistinguishable
+        from a missing one (`404`).
+      operationId: getSnippet
+      security:
+        - {}
+        - sessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64, minimum: 1 }
+          example: 3
+      responses:
+        '200':
+          description: The snippet
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Snippet' }
+        '400':
+          description: id is not a positive integer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: bad snippet id }
+        '404':
+          description: Snippet does not exist, has expired, or is private and not yours
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: snippet not found }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/me/snippets:
+    get:
+      tags: [snippets]
+      summary: My snippets
+      description: Up to 100 non-expired snippets of the current user of any visibility, newest first.
+      operationId: listMySnippets
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: List of snippets
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Snippet' }
+        '401': { $ref: '#/components/responses/NotLoggedIn' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/auth/signup:
+    post:
+      tags: [auth]
+      summary: Register
+      description: Creates a user and immediately starts a session.
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignupRequest' }
+      responses:
+        '201':
+          description: User created, session cookie set
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SetSessionCookie' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadJSON' }
+        '409':
+          description: E-mail or username is already taken
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                email: { value: { error: e-mail is already registered } }
+                username: { value: { error: username is already taken } }
+        '415': { $ref: '#/components/responses/NotJSON' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Log in
+      description: E-mail is case-insensitive. A previous session sent with the request is deleted.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Logged in, session cookie set
+          headers:
+            Set-Cookie: { $ref: '#/components/headers/SetSessionCookie' }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/BadJSON' }
+        '401':
+          description: Wrong e-mail or password
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: invalid e-mail or password }
+        '415': { $ref: '#/components/responses/NotJSON' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      summary: Log out
+      description: Deletes the current session and clears the cookie. Succeeds for guests too.
+      operationId: logout
+      security:
+        - {}
+        - sessionCookie: []
+      responses:
+        '204':
+          description: Logged out
+        '415': { $ref: '#/components/responses/NotJSON' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+  /api/auth/me:
+    get:
+      tags: [auth]
+      summary: Current user
+      operationId: me
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: The logged-in user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/NotLoggedIn' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+      description: HttpOnly session cookie set by login/signup.
+
+  headers:
+    SetSessionCookie:
+      description: '`session=<token>; Path=/; Max-Age=604800; HttpOnly; SameSite=Lax`'
+      schema: { type: string }
+
+  schemas:
+    Language:
+      type: string
+      enum: [text, c, cpp, go, python, js, rust, sh]
+    Visibility:
+      type: string
+      enum: [public, unlisted, private]
+      description: |
+        * `public` — shown in the feed
+        * `unlisted` — reachable by link only
+        * `private` — visible to the owner only
+
+    Snippet:
+      type: object
+      required: [id, title, content, language, visibility, author, createdAt, expiresAt]
+      properties:
+        id: { type: integer, format: int64, example: 3 }
+        title: { type: string, maxLength: 100, example: code.c }
+        content: { type: string, example: "#include <stdio.h>\n\nint main(void) { return 0; }" }
+        language: { $ref: '#/components/schemas/Language' }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        author:
+          type: string
+          nullable: true
+          description: Username of the owner, `null` for guest snippets
+          example: alice
+        createdAt: { type: string, format: date-time }
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: '`null` means the snippet never expires'
+
+    CreateSnippetRequest:
+      type: object
+      required: [content, language, visibility, expires]
+      properties:
+        title:
+          type: string
+          maxLength: 100
+          description: Trimmed; empty becomes `Untitled`
+          example: hello.go
+        content:
+          type: string
+          description: Must not be empty or whitespace-only
+          example: "package main\n\nfunc main() {}"
+        language: { $ref: '#/components/schemas/Language' }
+        visibility: { $ref: '#/components/schemas/Visibility' }
+        expires:
+          type: string
+          enum: [never, 10m, 1h, 1d, 1w]
+          example: 1d
+
+    User:
+      type: object
+      required: [id, username, email, createdAt]
+      properties:
+        id: { type: integer, format: int64, example: 2 }
+        username: { type: string, example: alice }
+        email: { type: string, format: email, example: alice@example.com }
+        createdAt: { type: string, format: date-time }
+
+    SignupRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          pattern: '^[A-Za-z0-9_.-]{3,50}$'
+          example: newbie
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Trimmed and lower-cased
+          example: newbie@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: At least 8 characters and at most 72 bytes (bcrypt limit)
+          example: supersecret
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: alice@example.com }
+        password: { type: string, format: password, example: password }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+  responses:
+    BadJSON:
+      description: Body is not valid JSON or is larger than 1 MB
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: invalid JSON body }
+    NotJSON:
+      description: Content-Type is not application/json (CSRF protection)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: 'Content-Type must be application/json' }
+    ValidationError:
+      description: A field failed validation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: content must not be empty }
+    NotLoggedIn:
+      description: No valid session
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: not logged in }
+    InternalError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { error: internal server error }

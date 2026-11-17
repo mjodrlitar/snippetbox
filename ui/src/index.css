@@ -508,6 +508,22 @@ button, input, select, textarea {
   line-height: 1.8;
 }
 
+.about-api {
+  margin-bottom: 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.about-api a {
+  color: var(--text-main);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.about-api a:hover {
+  color: var(--color-green-hover);
+}
+
 .about-start {
   display: block;
   text-align: center;

@@ -27,6 +27,9 @@ Seed users: `n3cr0l0rd`, `alice`, `bob` (password `password`).
 
 ### API
 
+Interactive docs (Swagger UI): [http://localhost:1223/api/docs](http://localhost:1223/api/docs).
+The OpenAPI 3 spec lives in `internal/docs/openapi.yaml` (served at `/api/openapi.yaml`); update it together with the handlers.
+
 | Method | Path                 | Description                            |
 |--------|----------------------|----------------------------------------|
 | GET    | `/api/snippets`      | 10 latest public, non-expired snippets |

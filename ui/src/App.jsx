@@ -79,7 +79,7 @@ function AppHeader({ user, onNavigate, onLogout }) {
 
   return (
     <header className="site-header">
-      <a href="/" className="brand-logo" onClick={handleLink('/')} title="agas snippetbox">
+      <a href="/" className="brand-logo" onClick={handleLink('/')} title="Sagas snippetbox">
         <BrandMark />
         <span>agas</span>
       </a>
@@ -492,9 +492,9 @@ function AboutPage({ onNavigate }) {
   return (
     <main className="auth-page-container">
       <section className="auth-card about-card">
-        <h1 className="about-heading"><BrandMark />About agas</h1>
+        <h1 className="about-heading"><BrandMark />About Sagas</h1>
         <p className="about-description">
-          <strong>agas</strong> is a minimalistic, high-performance snippet and paste sharing service.
+          <strong>Sagas</strong> is a minimalistic, high-performance snippet and paste sharing service.
           Designed with a dark hacker-terminal aesthetic, inspired by speed and simplicity.
         </p>
         <ul className="about-features">
@@ -503,6 +503,11 @@ function AboutPage({ onNavigate }) {
           <li>Public, unlisted, and private pastes</li>
           <li>Fully responsive across desktop, tablet, and mobile</li>
         </ul>
+        <p className="about-api">
+          Building on top of Sagas? See the{' '}
+          <a href="/api/docs" target="_blank" rel="noopener noreferrer">API documentation</a>
+          {' '}(Swagger).
+        </p>
         <a
           href="/"
           className="btn-auth-submit about-start"
