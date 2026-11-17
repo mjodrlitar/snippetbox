@@ -13,9 +13,10 @@ import (
 )
 
 type application struct {
-	snippets *models.SnippetModel
-	users    *models.UserModel
-	sessions *models.SessionModel
+	snippets  *models.SnippetModel
+	users     *models.UserModel
+	sessions  *models.SessionModel
+	languages *models.LanguageModel
 }
 
 func main() {
@@ -34,9 +35,10 @@ func main() {
 	defer db.Close()
 
 	app := &application{
-		snippets: &models.SnippetModel{DB: db},
-		users:    &models.UserModel{DB: db},
-		sessions: &models.SessionModel{DB: db},
+		snippets:  &models.SnippetModel{DB: db},
+		users:     &models.UserModel{DB: db},
+		sessions:  &models.SessionModel{DB: db},
+		languages: &models.LanguageModel{DB: db},
 	}
 
 	log.Printf("Starting a HTTP server at 127.0.0.1%s", *addr)

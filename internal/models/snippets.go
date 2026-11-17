@@ -6,10 +6,14 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrNoRecord = errors.New("models: no matching record found")
+var (
+	ErrNoRecord        = errors.New("models: no matching record found")
+	ErrUnknownLanguage = errors.New("models: unknown language")
+)
 
 type Snippet struct {
 	ID         int64      `json:"id"`
@@ -44,6 +48,13 @@ func (m *SnippetModel) Insert(ctx context.Context, userID *int64, title, content
 		RETURNING id`,
 		title, content, language, visibility, expiresAt, userID,
 	).Scan(&id)
+
+	// The language list lives in the DB (managed in the CMS), so the foreign
+	// key is what validates it.
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23503" && pgErr.ConstraintName == "snippets_language_fkey" {
+		return 0, ErrUnknownLanguage
+	}
 	return id, err
 }
 

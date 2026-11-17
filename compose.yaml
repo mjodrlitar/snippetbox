@@ -1,3 +1,7 @@
+x-directus-admin: &directus-admin
+  ADMIN_EMAIL: admin@example.com
+  ADMIN_PASSWORD: admin12345
+
 services:
   db:
     image: postgres:17-alpine
@@ -11,7 +15,7 @@ services:
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U snippetbox -d snippetbox"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U snippetbox -d snippetbox"]
       interval: 2s
       timeout: 3s
       retries: 15
@@ -39,5 +43,50 @@ services:
       - "1223:80"
     restart: unless-stopped
 
+  cms:
+    build:
+      context: .
+      dockerfile: cms/Dockerfile
+    environment:
+      <<: *directus-admin
+      SECRET: change-me-directus-secret-for-local-dev-only
+      PUBLIC_URL: http://localhost:8055
+      DB_CLIENT: pg
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: snippetbox
+      # Restricted role from db/init/004_cms_role.sql (no private snippets, no password hashes)
+      DB_USER: directus
+      DB_PASSWORD: directus
+      TELEMETRY: "false"
+    volumes:
+      - cms-uploads:/directus/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8055:8055"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8055/server/ping || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  # One-shot job: configures Directus collections, the Moderator role and content.
+  cms-setup:
+    image: directus/directus:12.6.1
+    entrypoint: ["node", "/setup/setup.mjs"]
+    environment:
+      <<: *directus-admin
+      DIRECTUS_URL: http://cms:8055
+    volumes:
+      - ./cms:/setup:ro
+    depends_on:
+      cms:
+        condition: service_healthy
+    restart: "no"
+
 volumes:
   db-data:
+  cms-uploads:

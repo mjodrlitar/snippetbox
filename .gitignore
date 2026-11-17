@@ -17,3 +17,5 @@ ui/node_modules/
 ui/dist/
 ui/dist-ssr/
 *.local
+cms/extensions/*/node_modules
+cms/extensions/*/dist

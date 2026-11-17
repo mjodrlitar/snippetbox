@@ -23,6 +23,22 @@ tags:
     description: Registration, login and sessions
 
 paths:
+  /api/languages:
+    get:
+      tags: [snippets]
+      summary: Editor languages
+      description: All languages for the snippet editor, ordered by name. The list is managed in the CMS (Directus).
+      operationId: listLanguages
+      responses:
+        '200':
+          description: List of languages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LanguageItem' }
+        '500': { $ref: '#/components/responses/InternalError' }
+
   /api/snippets:
     get:
       tags: [snippets]
@@ -239,7 +255,15 @@ components:
   schemas:
     Language:
       type: string
-      enum: [text, c, cpp, go, python, js, rust, sh]
+      maxLength: 16
+      description: Language code; must exist in `GET /api/languages`, otherwise `422 unknown language`
+      example: go
+    LanguageItem:
+      type: object
+      required: [code, name]
+      properties:
+        code: { $ref: '#/components/schemas/Language' }
+        name: { type: string, example: Go }
     Visibility:
       type: string
       enum: [public, unlisted, private]

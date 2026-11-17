@@ -1,0 +1,36 @@
+{
+  "name": "directus-extension-sagas",
+  "description": "Sagas customizations for Directus: snippet validation hook and code preview display",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "directus:extension": {
+    "type": "bundle",
+    "path": {
+      "app": "dist/app.js",
+      "api": "dist/api.js"
+    },
+    "entries": [
+      {
+        "type": "hook",
+        "name": "sagas-guard",
+        "source": "src/sagas-guard/index.js"
+      },
+      {
+        "type": "display",
+        "name": "code-preview",
+        "source": "src/code-preview/index.js"
+      }
+    ],
+    "host": "^12.0.0"
+  },
+  "scripts": {
+    "build": "directus-extension build",
+    "dev": "directus-extension build -w --no-minify"
+  },
+  "devDependencies": {
+    "@directus/errors": "3.0.0",
+    "@directus/extensions-sdk": "18.1.1",
+    "vue": "3.5.45"
+  }
+}

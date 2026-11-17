@@ -22,11 +22,6 @@ var expirations = map[string]time.Duration{
 	"1w":    7 * 24 * time.Hour,
 }
 
-var languages = map[string]bool{
-	"text": true, "c": true, "cpp": true, "go": true,
-	"python": true, "js": true, "rust": true, "sh": true,
-}
-
 var visibilities = map[string]bool{"public": true, "unlisted": true, "private": true}
 
 func (app *application) routes() http.Handler {
@@ -34,6 +29,7 @@ func (app *application) routes() http.Handler {
 
 	// JSON API
 	api := http.NewServeMux()
+	api.HandleFunc("GET /api/languages", app.languageList)
 	api.HandleFunc("GET /api/snippets", app.snippetLatest)
 	api.HandleFunc("GET /api/snippets/{id}", app.snippetGet)
 	api.HandleFunc("POST /api/snippets", app.snippetCreate)
@@ -60,6 +56,15 @@ func (app *application) routes() http.Handler {
 
 func renderApp(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./ui/dist/index.html")
+}
+
+func (app *application) languageList(w http.ResponseWriter, r *http.Request) {
+	languages, err := app.languages.All(r.Context())
+	if err != nil {
+		serverError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, languages)
 }
 
 func (app *application) snippetLatest(w http.ResponseWriter, r *http.Request) {
@@ -130,9 +135,6 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	case utf8.RuneCountInString(req.Title) > 100:
 		writeError(w, http.StatusUnprocessableEntity, "title is longer than 100 characters")
 		return
-	case !languages[req.Language]:
-		writeError(w, http.StatusUnprocessableEntity, "unknown language")
-		return
 	case !visibilities[req.Visibility]:
 		writeError(w, http.StatusUnprocessableEntity, "unknown visibility")
 		return
@@ -145,7 +147,10 @@ func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id, err := app.snippets.Insert(r.Context(), userID, req.Title, req.Content, req.Language, req.Visibility, expiresIn)
-	if err != nil {
+	if errors.Is(err, models.ErrUnknownLanguage) {
+		writeError(w, http.StatusUnprocessableEntity, "unknown language")
+		return
+	} else if err != nil {
 		serverError(w, err)
 		return
 	}

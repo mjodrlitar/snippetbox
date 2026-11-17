@@ -8,16 +8,21 @@ int main(void)
     return 0;
 }`;
 
-const LANGUAGE_NAMES = {
-  c: 'C',
-  text: 'Plain Text',
-  cpp: 'C++',
-  go: 'Go',
-  python: 'Python',
-  js: 'JavaScript',
-  rust: 'Rust',
-  sh: 'Shell',
-};
+// Fallback until /api/languages responds; the real list is managed in the CMS.
+const DEFAULT_LANGUAGES = [
+  { code: 'c', name: 'C' },
+  { code: 'text', name: 'Plain Text' },
+  { code: 'cpp', name: 'C++' },
+  { code: 'go', name: 'Go' },
+  { code: 'python', name: 'Python' },
+  { code: 'js', name: 'JavaScript' },
+  { code: 'rust', name: 'Rust' },
+  { code: 'sh', name: 'Shell' },
+];
+
+function languageName(languages, code) {
+  return languages.find((language) => language.code === code)?.name ?? code;
+}
 
 async function api(path, { method = 'GET', body } = {}) {
   const response = await fetch(path, {
@@ -249,14 +254,9 @@ function Editor({ code, setCode, title, setTitle, options, onSubmit, error, subm
             onChange={(event) => options.setLanguage(event.target.value)}
             aria-label="Language"
           >
-            <option value="c">C</option>
-            <option value="text">Plain Text</option>
-            <option value="cpp">C++</option>
-            <option value="go">Go</option>
-            <option value="python">Python</option>
-            <option value="js">JavaScript</option>
-            <option value="rust">Rust</option>
-            <option value="sh">Shell</option>
+            {options.languages.map((language) => (
+              <option key={language.code} value={language.code}>{language.name}</option>
+            ))}
           </select>
         </div>
         <div className="toolbar-select-wrapper">
@@ -305,7 +305,7 @@ function Editor({ code, setCode, title, setTitle, options, onSubmit, error, subm
   );
 }
 
-function SnippetView({ snippet, error }) {
+function SnippetView({ snippet, error, languages }) {
   if (error) return <div className="snippet-status" role="alert">{error}</div>;
   if (!snippet) return <div className="snippet-status">Loading...</div>;
 
@@ -322,7 +322,7 @@ function SnippetView({ snippet, error }) {
       <footer className="snippet-meta-bar">
         <span className="meta-item">{snippet.title || 'Untitled'}</span>
         <span className="meta-divider">|</span>
-        <span>Type: <strong className="meta-item">{LANGUAGE_NAMES[snippet.language] ?? snippet.language}</strong></span>
+        <span>Type: <strong className="meta-item">{languageName(languages, snippet.language)}</strong></span>
         <span className="meta-divider">|</span>
         <span>Created at: <strong className="meta-item">{formatDate(snippet.createdAt)}</strong></span>
         <span className="meta-divider">|</span>
@@ -378,7 +378,7 @@ function Workspace({
               user={user}
             />
           ) : (
-            <SnippetView snippet={snippet} error={snippetError} />
+            <SnippetView snippet={snippet} error={snippetError} languages={options.languages} />
           )}
         </main>
         <SidebarSnippets
@@ -539,6 +539,13 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [user, setUser] = useState(null);
   const [mySagas, setMySagas] = useState([]);
+  const [languages, setLanguages] = useState(DEFAULT_LANGUAGES);
+
+  useEffect(() => {
+    api('/api/languages')
+      .then((list) => list.length && setLanguages(list))
+      .catch((error) => console.error('Cannot load languages:', error));
+  }, []);
   const [sidebarMode, setSidebarMode] = useState('latest');
 
   useEffect(() => {
@@ -631,6 +638,7 @@ export default function App() {
   };
 
   const options = {
+    languages,
     language,
     setLanguage,
     expiration,
